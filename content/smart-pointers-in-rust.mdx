@@ -1,0 +1,346 @@
+---
+title: "Understanding Smart Pointers in Rust"
+abstract: Smart Pointers, a core concept in Rust, can seem cryptic and challenging to grasp. This post delves into the world of Smart Pointers, unraveling their intricacies and shedding light on their power in managing memory allocation and bound checking.
+publishedOn: "2024-07-29T15:06:29+0530"
+---
+
+When I was first learning to code in rust, I remember finding the smart Pointers _extremely_ confusing. 😬
+
+If you don't understand what it's doing, don't worry I got you.
+
+In this blog post, we're going to learn how smart pointers work in rust.
+
+First, let's start with pointers.
+
+## What are Pointers in Rust?
+
+A **Pointer** is a variable that stores memory address which points to some other data in memory. The most common pointer is references (`&`) in rust. They don’t have any special capabilities other than referring to data, and have no overhead(additional operational cost).
+
+```rust
+fn main(){
+    let x = 5;
+    let y = &x; // y is pointing towards x
+    println!("x: {}", x); // prints: x: 5
+    println!("y: {}", y); // prints: y: 5
+}
+```
+
+## Then what are Smart Pointers in Rust and why do we need them?
+
+Smart pointers basically is a way to do more things on top of references(`&`). They implement the `Deref` and `Drop` traits. Moreover, smart pointers can also have ownership of the data they are pointing to.
+
+**Deref Trait:-** The Deref trait is used to treat smart pointers as a reference, enabling easy access to the data stored behind the smart pointers.
+
+```rust
+fn main() {
+    let x = 5;
+    let y = &x; //setting y equal to a reference to x
+
+    assert_eq!(5, x);
+    assert_eq!(5, *y); //dereferencing y so that compiler can access the real value
+    //assert_eq!(5,y); this will give error as we are comparing i32 to a reference
+}
+```
+
+**Drop Trait:-** The Drop trait lets you decide what to do when a reference is going out of scope.
+
+```rust
+struct Cars  {
+        size: i32
+}
+
+impl Drop for Cars {
+        fn drop(&mut self) {
+                println!("This instance of Car has being dropped: {}", self.size);
+}
+}
+
+fn main() {
+        let first_instance = Cars{size: 10};
+        let second_instance = Cars{size: 5};
+        println!("car instance is created.");
+
+       //At the end of main, our instances will go out of scope and Rust will call the code we put in the drop method, printing our final message
+}
+
+/*
+output :-
+car instance is created.
+This instance of Car has being dropped: 10
+This instance of Car has being dropped: 5
+
+*/
+```
+
+Now that our basics are cleared. I’ll be talking about several types of smart pointers in rust and their _usecases_.
+
+## 1. `Box<T>`
+
+**Box** is the simplest smart pointer in rust. It is used to dictate that enclosed data needs to be stored on the heap instead of stack.
+
+```rust
+fn main() {
+    let boxed_value = Box::new(10); //boxed_value owns 10 here
+    println!("Boxed value: {}", boxed_value);
+
+    // `boxed_value` is deallocated here automatically when it goes out of scope
+}
+//10 is stored in heap
+```
+
+### Usecases:-
+
+- When you need to store data on the heap, use Box.
+- When you have a type whose size is not defined,use Box.
+- When you want to create recursive types. Eg- Binary Tree
+
+### Usefull Resources:-
+
+- [Rust Book](https://doc.rust-lang.org/book/ch15-01-box.html)
+- [Rust Docs](https://doc.rust-lang.org/std/boxed/struct.Box.html)
+
+## 2. `Rc<T>` (Reference Counting)
+
+**Rc** comes into the picture when you have multiple references to a memory but you are not sure in which order they gonna go out of scope. Rc counts the number of references to the memory and it keeps the references alive until the last reference goes out of scope.
+
+```rust
+#[derive(Debug)]
+//This is how we bring Rc into scope
+use std::rc::Rc;
+
+struct Person {
+    name: String,
+    age: u32,
+}
+
+fn main() {
+    let person1 = Rc::new(Person {
+        name: "Alice".to_string(),
+        age: 25,
+    });
+
+    // Clone the Rc pointer to create additional references
+    let person2 = Rc::clone(&person1);
+    let person3 = Rc::clone(&person1);
+    /*
+    note:- here the clone method does not clone the data it
+    wraps but instead makes another Rc that points to the data on the heap.
+    */
+    println!("Reference Count: {}", Rc::strong_count(&person1));
+}
+```
+
+### Usecases:-
+
+- When you need multiple parts of your code to own and manage access to the same data, use Rc.
+- When you don't want to clone data while creating new references of the data, use Rc.
+- When your program is single threaded as Rc it is not thread-safe.
+
+### Useful Links:-
+
+- [Rust Book](https://doc.rust-lang.org/book/ch15-04-rc.html)
+- [Rust by Example](https://doc.rust-lang.org/rust-by-example/std/rc.html)
+
+## 3. `Arc<T>` (Atomic Reference Count)
+
+The **Arc** smart pointer is just like the Rc smart pointer but with extra benefits. It lets you use atomic operations to manage reference count, making it thread-safe.
+
+**what are Atomic operations?**
+
+Atomic operations ensure that a set of operations on shared data is completed without interruption, providing thread safety and consistency.
+
+```rust
+use std::sync::Arc;
+use std::thread;
+
+let val = Arc::new(0);
+for i in 0..10 {
+    let val = Arc::clone(&val);
+
+    // You could not do this with "Rc"
+    thread::spawn(move || {
+        println!(
+            "Value: {:?} / Active pointers: {}",
+            *val+i,
+            Arc::strong_count(&val)
+        );
+    });
+}
+/*
+output:-
+Value: 0 / Active pointers: 11
+Value: 1 / Active pointers: 11
+...
+*/
+```
+
+### Usecases:-
+
+- Arc should be used when you need to share data between multiple threads as it provides thread safety.
+
+### Useful Link:-
+
+- [Rust by example](https://doc.rust-lang.org/rust-by-example/std/arc.html)
+- [Rust Docs](https://doc.rust-lang.org/std/sync/struct.Arc.html)
+
+**Note:-** It is slower than `Rc` when dealing with single threads.
+
+## 4. `Refcell<T>` (Reference Cell)
+
+**Refcell** is used when you want to mutate data even when there are immutable references to that data and this pattern is often referred to as `interior mutability` in Rust.
+
+**How Refcell works?**
+
+So basically, Refcell implements runtime borrow checking, rather than compile-time checking like Rust’s usual borrowing rules. This allows certain memory-safe scenarios to be executed, which would have been disallowed by the compile-time checks.
+
+```rust
+use std::cell::RefCell;
+
+fn main() {
+    // Create a RefCell containing a vector
+    let vec = RefCell::new(vec![1, 2, 3]);
+
+    // Get a mutable reference to the vector and modify it
+    {
+        let mut vec_ref = vec.borrow_mut();
+        vec_ref.push(4); // Mutate the vector by adding an element
+    }
+
+    // Get an immutable reference to the vector and read it
+    {
+        let vec_ref = vec.borrow();
+        println!("Vector contents: {:?}", *vec_ref); // Output: Vector contents: [1, 2, 3, 4]
+    }
+}
+```
+
+### Usecases:-
+
+- It should be used when you’re sure your code follows the borrowing rules but the compiler is unable to understand and guarantee that.
+- It should be used when you need to manage mutable state in a single-threaded context.
+
+### Useful Links:-
+
+- [Rust Book](https://doc.rust-lang.org/book/ch15-05-interior-mutability.html)
+- [Rust Docs](https://doc.rust-lang.org/std/cell/struct.RefCell.html)
+
+## 5. `Mutex<T>` (Mutual Exclusion)
+
+The **Mutex** smart pointer is helpful when we want to be able to mutate shared data in multiple threads safely. It allows only one thread to access some data at any given time whether be it a writer or reader. It is used with Arc to ensure shared ownership among multi thread program.
+
+```rust
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    let counter = Arc::new(Mutex::new(0));
+    let mut handles = vec![];
+
+    for _ in 0..10 {
+        let counter = Arc::clone(&counter);
+        let handle = thread::spawn(move || {
+            let mut num = counter.lock().unwrap();
+
+            *num += 1;
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    println!("Result: {}", *counter.lock().unwrap());
+}
+//result : 10
+```
+
+### Usecases:-
+
+- Mutex should be used when you need to exclusively access data majorly dealing with high writing operations keeping overhead of locking and unlocking in mind.
+
+### Useful Links:-
+
+- [Rust Book](https://doc.rust-lang.org/book/ch16-03-shared-state.html)
+- [Rust Docs](https://doc.rust-lang.org/std/sync/struct.Mutex.html)
+
+## 6. `RwLock<T>` (Reader-Writer Lock)
+
+**RwLock** is similar to Mutex but unlike Mutex it allows multiple threads to read mutable data while only allowing one thread to write to it at a time.
+
+```rust
+use std::sync::RwLock;
+
+let lock = RwLock::new(5);
+
+// many reader locks can be held at once
+{
+    let r1 = lock.read().unwrap();
+    let r2 = lock.read().unwrap();
+    assert_eq!(*r1, 5);
+    assert_eq!(*r2, 5);
+} // read locks are dropped at this point
+
+// only one write lock may be held, however
+{
+    let mut w = lock.write().unwrap();
+    *w += 1;
+    assert_eq!(*w, 6);
+} // write lock is dropped here
+```
+
+### Usecases:-
+
+- Rwlock should be used when you have frequent reads and rare write operations.
+- When you want to allow multiple readers to access the data concurrently.
+
+### Useful Links:-
+
+- [Rust Docs](https://doc.rust-lang.org/std/sync/struct.RwLock.html)
+
+## 7. `Cow<T>` (Clone on Write)
+
+Cow provides a flexible way of working with borrowed and owned data. It acts like an enum which lets you use both an owned instance of something or a borrowed instance using the same code.
+
+```rust
+fn get_potion_message(num: usize) -> Cow<'static, str> {
+    match num {
+        0 => Cow::Borrowed("out of potions"),
+        1 => Cow::Borrowed("last potion"),
+        _ => Cow::Owned(format!("{} potions remaining", num)),
+    }
+}
+//static cases avoid allocation using cow borrowed
+//Dynamic cases use Cow::Owned for formatted strings, allowing mutation if necessary.
+```
+
+### Usecases:-
+
+- It should be used when you want you want to leverage efficient and smart memory allocation and data handling.
+
+### Useful Links:-
+
+- [Rust Docs](https://doc.rust-lang.org/std/borrow/enum.Cow.html)
+
+## 8. `Cell<T>`
+
+**Cell** is similar to Refcell but it provides zero-cost interior mutability only for Copy types. It's basically a RefCell with less features as you can only take/replace values, but it has the upside of no runtime cost or ability to panic.
+
+```rust
+let x = Cell::new(1);
+let y = &x;
+let z = &x;
+x.set(2);
+y.set(3);
+z.set(4);
+println!("{}", x.get());
+//Note that here we were able to mutate the same value from various immutable references.
+```
+
+### Usecases:-
+
+- In cases where mutation is an implementation detail, use Cell.
+
+### Useful Links:-
+
+- [Rust Docs](https://doc.rust-lang.org/std/cell/)
