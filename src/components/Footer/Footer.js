@@ -1,10 +1,10 @@
-import React from 'react';
-import Link from 'next/link';
+import React from "react";
+import Link from "next/link";
 
-import Logo from '@/components/Logo';
+import Logo from "@/components/Logo";
 
-import DecorativeSwoops from './DecorativeSwoops';
-import styles from './Footer.module.css';
+import DecorativeSwoops from "./DecorativeSwoops";
+import styles from "./Footer.module.css";
 
 function Footer() {
   return (
@@ -13,12 +13,8 @@ function Footer() {
       <div className={styles.content}>
         <div>
           <Logo mobileAlignment="center" />
-          
-          <p className={styles.attribution}>
-           Made with love ♥ 
-           
 
-          </p>
+          <p className={styles.attribution}>Made with love ♥</p>
         </div>
         <nav>
           <h2 className={styles.linkHeading}>Links</h2>
@@ -33,9 +29,10 @@ function Footer() {
               <Link href="/todo">Privacy Policy</Link>
             </li>
             <li>
-              <a href="https://github.com/Rohanarora17">
-                Github
-              </a>
+              <a href="https://github.com/Rohanarora17">Github</a>
+            </li>
+            <li>
+              <a href="https://x.com/Okayrohannn">Twitter(X)</a>
             </li>
           </ul>
         </nav>
