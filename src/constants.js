@@ -1,4 +1,4 @@
-export const BLOG_TITLE = "Randomly Rohan";
+export const BLOG_TITLE = "Rust with Rohan";
 export const BLOG_DESCRIPTION = "My Learning journey through blogs";
 
 export const LIGHT_COLORS = {
