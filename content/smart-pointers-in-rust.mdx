@@ -40,7 +40,7 @@ fn main() {
 }
 ```
 
-**Drop Trait:-** The Drop trait lets you decide what to do when a reference is going out of scope.
+**Drop Trait:-** The Drop trait lets you decide what to do when a value is going out of scope.
 
 ```rust
 struct Cars  {
@@ -224,7 +224,7 @@ fn main() {
 
 ## 5. `Mutex<T>` (Mutual Exclusion)
 
-The **Mutex** smart pointer is helpful when we want to be able to mutate shared data in multiple threads safely. It allows only one thread to access some data at any given time whether it is a writer or reader. It is used with Arc to ensure shared ownership among multi threaded programs.
+**Mutex** is helpful when we want to be able to mutate shared data in multiple threads safely. It allows only one thread to access some data at any given time whether it is a writer or reader. It is used with Arc to ensure shared ownership among multi threaded programs.
 
 ```rust
 use std::sync::{Arc, Mutex};
