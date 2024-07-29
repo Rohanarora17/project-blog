@@ -25,9 +25,9 @@ fn main(){
 }
 ```
 
-## Then what are Smart Pointers in Rust and why do we need them?
+## What are Smart Pointers in Rust and why do we need them?
 
-Smart pointers basically is a way to do more things on top of references(`&`). They implement the `Deref` and `Drop` traits. Moreover, smart pointers can also have ownership of the data they are pointing to.
+Smart pointers is basically a way to do more things on top of references(`&`). They implement the `Deref` and `Drop` traits. Moreover, smart pointers can also have ownership of the data they are pointing to.
 
 **Deref Trait:-** The Deref trait is used to treat smart pointers as a reference, enabling easy access to the data stored behind the smart pointers.
 
@@ -91,7 +91,7 @@ fn main() {
 ### Usecases:-
 
 - When you need to store data on the heap, use Box.
-- When you have a type whose size is not defined,use Box.
+- When you have a data type whose size is not defined, use Box.
 - When you want to create recursive types. Eg- Binary Tree
 
 ### Usefull Resources:-
@@ -101,7 +101,7 @@ fn main() {
 
 ## 2. `Rc<T>` (Reference Counting)
 
-**Rc** comes into the picture when you have multiple references to a memory but you are not sure in which order they gonna go out of scope. Rc counts the number of references to the memory and it keeps the references alive until the last reference goes out of scope.
+**Rc** comes into the picture when you have multiple references to a memory but you are not sure in which order they are going out of scope. Rc counts the number of references to the memory and it keeps the references alive until the last reference goes out of scope.
 
 ```rust
 #[derive(Debug)]
@@ -134,7 +134,7 @@ fn main() {
 
 - When you need multiple parts of your code to own and manage access to the same data, use Rc.
 - When you don't want to clone data while creating new references of the data, use Rc.
-- When your program is single threaded as Rc it is not thread-safe.
+- When your program is single threaded because Rc is not thread-safe.
 
 ### Useful Links:-
 
@@ -147,7 +147,7 @@ The **Arc** smart pointer is just like the Rc smart pointer but with extra benef
 
 **what are Atomic operations?**
 
-Atomic operations ensure that a set of operations on shared data is completed without interruption, providing thread safety and consistency.
+Atomic operations ensure that a set of operations on shared data are completed without interruption, providing thread safety and consistency.
 
 ```rust
 use std::sync::Arc;
@@ -183,7 +183,7 @@ Value: 1 / Active pointers: 11
 - [Rust by example](https://doc.rust-lang.org/rust-by-example/std/arc.html)
 - [Rust Docs](https://doc.rust-lang.org/std/sync/struct.Arc.html)
 
-**Note:-** It is slower than `Rc` when dealing with single threads.
+> **Note:-** It is slower than Rc when dealing with single threads.
 
 ## 4. `Refcell<T>` (Reference Cell)
 
@@ -191,7 +191,7 @@ Value: 1 / Active pointers: 11
 
 **How Refcell works?**
 
-So basically, Refcell implements runtime borrow checking, rather than compile-time checking like Rust’s usual borrowing rules. This allows certain memory-safe scenarios to be executed, which would have been disallowed by the compile-time checks.
+So basically, Refcell implements runtime borrow checking, rather than compile-time checking similar to Rust’s usual borrowing rules. This allows certain memory-safe scenarios to be executed, which would have been disallowed by the compile-time checks.
 
 ```rust
 use std::cell::RefCell;
@@ -226,7 +226,7 @@ fn main() {
 
 ## 5. `Mutex<T>` (Mutual Exclusion)
 
-The **Mutex** smart pointer is helpful when we want to be able to mutate shared data in multiple threads safely. It allows only one thread to access some data at any given time whether be it a writer or reader. It is used with Arc to ensure shared ownership among multi thread program.
+The **Mutex** smart pointer is helpful when we want to be able to mutate shared data in multiple threads safely. It allows only one thread to access some data at any given time whether it is a writer or reader. It is used with Arc to ensure shared ownership among multi threaded programs.
 
 ```rust
 use std::sync::{Arc, Mutex};
@@ -316,7 +316,7 @@ fn get_potion_message(num: usize) -> Cow<'static, str> {
 
 ### Usecases:-
 
-- It should be used when you want you want to leverage efficient and smart memory allocation and data handling.
+- It should be used when you want to leverage efficient and smart memory allocation and data handling.
 
 ### Useful Links:-
 
