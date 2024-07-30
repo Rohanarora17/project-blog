@@ -1,6 +1,6 @@
 ---
 title: "Understanding Smart Pointers in Rust"
-abstract: Smart Pointers, a core concept in Rust, can seem cryptic and challenging to grasp. This post delves into the world of Smart Pointers, unraveling their intricacies and shedding light on their power in managing memory allocation and bound checking.
+abstract: Smart Pointers, a core concept in Rust, can seem cryptic and challenging to grasp. This post delves into the world of Smart Pointers, Interior Mutability and types for safe thread and data access, unraveling their intricacies and shedding light on their power in managing memory allocation and bound checking.
 publishedOn: "2024-07-29T15:06:29+0530"
 ---
 
@@ -8,7 +8,7 @@ publishedOn: "2024-07-29T15:06:29+0530"
 
 When I first learned Rust, smart pointers were extremely confusing. 😬 If you're struggling too, don't worry, I got you.
 
-In this blog post, we're going to talk about smart pointers in detail.
+In this blog post, we're going to talk about smart pointers and interior mutability in detail.
 
 ## First, What are Pointers in Rust?
 
@@ -187,6 +187,8 @@ Value: 1 / Active pointers: 11
 
 **Refcell** is used when you want to mutate data even when there are immutable references to that data and this pattern is often referred to as `interior mutability` in Rust.
 
+**Note:-** RefCell itself is not a smart pointer as it holds data instead of referring to it, but it offers two smart pointers, Ref and RefMut, to access the contained data.
+
 **How Refcell works?**
 
 So basically, Refcell implements runtime borrow checking, rather than compile-time checking similar to Rust’s usual borrowing rules. This allows certain memory-safe scenarios to be executed, which would have been disallowed by the compile-time checks.
@@ -225,6 +227,8 @@ fn main() {
 ## 5. `Mutex<T>` (Mutual Exclusion)
 
 **Mutex** is helpful when we want to be able to mutate shared data in multiple threads safely. It allows only one thread to access some data at any given time whether it is a writer or reader. It is used with Arc to ensure shared ownership among multi threaded programs.
+
+**Note**:- Mutex itself is not a smart pointer as it holds data instead of referring to it but the call to lock returns a smart pointer called MutexGuard.
 
 ```rust
 use std::sync::{Arc, Mutex};
@@ -266,6 +270,8 @@ fn main() {
 
 **RwLock** is similar to Mutex but unlike Mutex it allows multiple threads to read mutable data while only allowing one thread to write to it at a time.
 
+**Note:-** RwLock itself is not a smart pointer as it holds data instead of referring to it, but it offers two smart pointers, RwLockReadGuard and RwLockWriteGuard, to access the contained data.
+
 ```rust
 use std::sync::RwLock;
 
@@ -298,7 +304,7 @@ let lock = RwLock::new(5);
 
 ## 7. `Cow<T>` (Clone on Write)
 
-Cow provides a flexible way of working with borrowed and owned data. It acts like an enum which lets you use both an owned instance of something or a borrowed instance using the same code.
+Cow provides a flexible way of working with borrowed and owned data. It acts as an enum that lets you use either an owned instance of something or a borrowed instance, rather than acting like a smart pointer, using the same code.
 
 ```rust
 fn get_potion_message(num: usize) -> Cow<'static, str> {
