@@ -306,6 +306,7 @@ let lock = RwLock::new(5);
 
 Cow provides a flexible way of working with borrowed and owned data. It acts as an enum that lets you use either an owned instance of something or a borrowed instance, rather than acting like a smart pointer, using the same code.
 
+**Note:-** Cow isn't a smart pointer as It doesn't implement `Drop` trait. Cows are used to abstract over owned vs references data.
 ```rust
 fn get_potion_message(num: usize) -> Cow<'static, str> {
     match num {
