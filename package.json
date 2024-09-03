@@ -11,21 +11,24 @@
   },
   "dependencies": {
     "@vercel/analytics": "^1.3.1",
-    "bright": "0.8.4",
-    "clsx": "1.2.1",
-    "date-fns": "2.30.0",
-    "eslint": "8.43.0",
-    "eslint-config-next": "13.4.6",
-    "framer-motion": "10.14",
+    "bright": "0.8.5",
+    "clsx": "2.1.1",
+    "date-fns": "3.6.0",
+    "eslint": "9.9.1",
+    "eslint-config-next": "14.2.7",
+    "framer-motion": "11.4.0",
     "gray-matter": "4.0.3",
     "js-cookie": "^3.0.5",
     "new-component": "5.0.2",
-    "next": "13.4.12",
-    "next-mdx-remote": "4.4.1",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
+    "next": "14.2.7",
+    "next-mdx-remote": "5.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "react-feather": "2.0.10",
     "rss": "^1.2.2",
-    "vercel": "^35.2.1"
+    "vercel": "37.2.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5"
   }
 }
