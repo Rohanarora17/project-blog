@@ -10,7 +10,8 @@ import "./styles.css";
 import { cookies } from "next/headers";
 import { Analytics } from "@vercel/analytics/react";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
-
+import { SpeedInsights } from "@vercel/speed-insights/next"
+  
 const mainFont = Work_Sans({
   subsets: ["latin"],
   display: "fallback",
@@ -62,6 +63,7 @@ function RootLayout({ children }) {
           <Footer />
           <Analytics mode={"production"} />
           <GoogleAnalytics />
+          <SpeedInsights />
         </body>
       </html>
     </RespectMotionPreferences>
