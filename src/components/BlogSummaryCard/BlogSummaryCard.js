@@ -11,6 +11,7 @@ function BlogSummaryCard({
   title,
   publishedOn,
   abstract,
+  readingTime,
 }) {
   const href = `/${slug}`;
   const humanizedDate = format(
@@ -23,7 +24,14 @@ function BlogSummaryCard({
       <Link href={href} className={styles.title}>
         {title}
       </Link>
-      <time dateTime={publishedOn}>{humanizedDate}</time>
+      <time dateTime={publishedOn}>
+        {humanizedDate}
+        {readingTime && (
+          <span className={styles.readingTime}>
+            {' '}· {readingTime} min read
+          </span>
+        )}
+      </time>
       <p>
         {abstract}{' '}
         <Link

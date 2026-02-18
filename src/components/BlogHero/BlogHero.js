@@ -3,10 +3,10 @@ import { format } from 'date-fns';
 import clsx from 'clsx';
 
 import styles from './BlogHero.module.css';
-import CodeSnippet from '../CodeSnippet';
 function BlogHero({
   title,
   publishedOn,
+  readingTime,
   className,
   ...delegated
 }) {
@@ -16,9 +16,6 @@ function BlogHero({
   );
 
   return (
-
-
-    
     <header
       className={clsx(styles.wrapper, className)}
       {...delegated}
@@ -30,11 +27,14 @@ function BlogHero({
           <time dateTime={publishedOn}>
             {humanizedDate}
           </time>
+          {readingTime && (
+            <span className={styles.readingTime}>
+              {' '}· {readingTime} min read
+            </span>
+          )}
         </p>
       </div>
     </header>
-
-    
   );
 }
 

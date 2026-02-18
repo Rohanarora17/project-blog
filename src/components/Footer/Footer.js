@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 
 import Logo from "@/components/Logo";
+import Newsletter from "@/components/Newsletter";
 
 import DecorativeSwoops from "./DecorativeSwoops";
 import styles from "./Footer.module.css";
@@ -23,12 +24,6 @@ function Footer() {
               <Link href="/rss.xml">RSS feed</Link>
             </li>
             <li>
-              <Link href="/todo">Terms of Use</Link>
-            </li>
-            <li>
-              <Link href="/todo">Privacy Policy</Link>
-            </li>
-            <li>
               <a href="https://github.com/Rohanarora17">Github</a>
             </li>
             <li>
@@ -36,6 +31,9 @@ function Footer() {
             </li>
           </ul>
         </nav>
+        <div className={styles.newsletterSection}>
+          <Newsletter />
+        </div>
       </div>
     </div>
   );

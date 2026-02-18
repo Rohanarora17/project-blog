@@ -29,6 +29,7 @@
   text-decoration: none;
   font-weight: 700;
 }
+
 .attribution a:hover {
   text-decoration: revert;
   text-underline-offset: 0.125em;
@@ -44,9 +45,11 @@
   list-style-type: none;
   padding: 0;
 }
+
 .linkList li:not(:last-child) {
   margin-bottom: 8px;
 }
+
 .linkList a {
   text-decoration: none;
   font-size: 1rem;
@@ -64,4 +67,9 @@
     align-items: baseline;
     gap: 32px;
   }
+}
+
+.newsletterSection {
+  flex: 1;
+  max-width: 320px;
 }

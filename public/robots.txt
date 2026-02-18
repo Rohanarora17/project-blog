@@ -1,0 +1,9 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://rustwithrohan.com/sitemap.xml
+
+# AI agent accessibility
+# See /llms.txt for AI-readable site information

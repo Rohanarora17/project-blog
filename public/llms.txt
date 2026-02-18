@@ -1,0 +1,42 @@
+# Rust with Rohan
+
+> A technical blog by Rohan covering Rust programming, systems programming, and software engineering concepts.
+
+## About
+
+This is a personal technical blog focused on Rust programming language concepts, memory management, systems programming, and software engineering best practices. Articles are written with clear explanations and practical code examples.
+
+## Author
+
+- Name: Rohan
+- GitHub: https://github.com/Rohanarora17
+- Twitter/X: https://x.com/Okayrohannn
+
+## Content
+
+Articles are published as MDX files with the following metadata:
+- title: Article title
+- abstract: Brief description
+- publishedOn: Publication date (ISO 8601)
+- tags: Topic tags (e.g., rust, memory-management)
+- category: Content category
+
+## Available Content
+
+### Understanding Smart Pointers in Rust
+- URL: /smart-pointers-in-rust
+- Topics: Smart Pointers, Interior Mutability, Box, Rc, Arc, RefCell, Mutex, RwLock, Cow, Cell
+- Category: Rust
+
+## Navigation
+
+- Homepage: / (lists all articles)
+- RSS Feed: /rss.xml
+- Sitemap: /sitemap.xml
+
+## Technical Details
+
+- Built with Next.js (React)
+- Content authored in MDX format
+- Syntax highlighting for code blocks
+- Light/dark theme support
