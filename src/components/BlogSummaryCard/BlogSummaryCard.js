@@ -28,7 +28,7 @@ function BlogSummaryCard({
         {humanizedDate}
         {readingTime && (
           <span className={styles.readingTime}>
-            {' '}· {readingTime} min read
+            {' '}· {readingTime}
           </span>
         )}
       </time>

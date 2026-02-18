@@ -29,7 +29,7 @@ function BlogHero({
           </time>
           {readingTime && (
             <span className={styles.readingTime}>
-              {' '}· {readingTime} min read
+              {' '}· {readingTime}
             </span>
           )}
         </p>
