@@ -77,13 +77,10 @@ export default function SubscribersPage() {
         setMessage(null);
 
         try {
-            const res = await fetch('/api/newsletter/send', {
+            const res = await fetch('/api/admin/newsletter/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...newsletterData,
-                    secret: 'admin-manual'
-                }),
+                body: JSON.stringify(newsletterData),
             });
 
             const result = await res.json();

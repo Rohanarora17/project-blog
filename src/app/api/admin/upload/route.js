@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import matter from 'gray-matter';
 
+// This route is protected by `src/middleware.js` which verifies the `admin_token` cookie.
 export async function POST(request) {
     try {
         const body = await request.json();
@@ -62,44 +63,94 @@ export async function POST(request) {
             );
         }
 
-        // Build the MDX file content
-        const frontmatterObj = {
-            title,
-            abstract,
-            publishedOn,
-        };
-        if (category) frontmatterObj.category = category;
-        if (tags && tags.length > 0) frontmatterObj.tags = tags;
-
-        const mdxContent = matter.stringify(content, frontmatterObj);
-
-        // Write to the /content directory
-        const contentDir = path.join(process.cwd(), 'content');
-        const filePath = path.join(contentDir, `${slug}.mdx`);
-
-        // Check if file already exists
+        // Check if we can write to Sanity
+        // Dynamic import to avoid client-side bundling issues if any
+        let writeClient;
         try {
-            await fs.access(filePath);
-            return NextResponse.json(
-                { error: `A post with slug "${slug}" already exists` },
-                { status: 409 }
-            );
-        } catch {
-            // File doesn't exist — good to proceed
+            const clientModule = await import('@/sanity/lib/client');
+            writeClient = clientModule.writeClient;
+        } catch (e) {
+            console.warn('Failed to import Sanity write client', e);
         }
 
-        await fs.mkdir(contentDir, { recursive: true });
-        await fs.writeFile(filePath, mdxContent, 'utf8');
+        if (writeClient) {
+            // Write to Sanity
+            const existing = await writeClient.fetch(
+                `*[_type == "post" && slug.current == $slug][0]`,
+                { slug }
+            );
 
-        return NextResponse.json({
-            message: 'Post created successfully',
-            title,
-            slug,
-        });
+            if (existing) {
+                return NextResponse.json(
+                    { error: `A post with slug "${slug}" already exists in Sanity` },
+                    { status: 409 }
+                );
+            }
+
+            const newDoc = {
+                _type: 'post',
+                title,
+                slug: { _type: 'slug', current: slug },
+                abstract,
+                publishedAt: publishedOn,
+                category,
+                tags,
+                mdxContent: content, // Save raw MDX here
+                body: [] // Empty Portable Text for now
+            };
+
+            await writeClient.create(newDoc);
+
+            return NextResponse.json({
+                message: 'Post created in Sanity successfully',
+                title,
+                slug,
+                source: 'sanity'
+            });
+
+        } else {
+            // Fallback to Local Filesystem
+            // Build the MDX file content
+            const frontmatterObj = {
+                title,
+                abstract,
+                publishedOn,
+            };
+            if (category) frontmatterObj.category = category;
+            if (tags && tags.length > 0) frontmatterObj.tags = tags;
+
+            const mdxContent = matter.stringify(content, frontmatterObj);
+
+            // Write to the /content directory
+            const contentDir = path.join(process.cwd(), 'content');
+            const filePath = path.join(contentDir, `${slug}.mdx`);
+
+            // Check if file already exists
+            try {
+                await fs.access(filePath);
+                return NextResponse.json(
+                    { error: `A post with slug "${slug}" already exists locally` },
+                    { status: 409 }
+                );
+            } catch {
+                // File doesn't exist — good to proceed
+            }
+
+            await fs.mkdir(contentDir, { recursive: true });
+            await fs.writeFile(filePath, mdxContent, 'utf8');
+
+            return NextResponse.json({
+                message: 'Post created locally successfully',
+                title,
+                slug,
+                source: 'local'
+            });
+        }
+
     } catch (error) {
         console.error('Upload error:', error);
         return NextResponse.json(
-            { error: 'Failed to create post' },
+            { error: 'Failed to create post: ' + error.message },
             { status: 500 }
         );
     }

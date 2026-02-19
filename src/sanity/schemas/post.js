@@ -120,6 +120,12 @@ export default defineType({
                 },
             ],
         }),
+        defineField({
+            name: 'mdxContent',
+            title: 'MDX Content (Raw)',
+            type: 'text',
+            description: 'Raw MDX content if writing from Admin Dashboard (overrides Body if present)',
+        }),
     ],
     orderings: [
         {

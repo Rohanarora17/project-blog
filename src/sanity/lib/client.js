@@ -12,3 +12,13 @@ export const client = projectId
         useCdn: true,
     })
     : null;
+
+export const writeClient = projectId && process.env.SANITY_TOKEN
+    ? createClient({
+        projectId,
+        dataset,
+        apiVersion,
+        token: process.env.SANITY_TOKEN,
+        useCdn: false, // Ensure fresh data for writes
+    })
+    : null;

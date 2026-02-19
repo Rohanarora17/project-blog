@@ -3,24 +3,14 @@ import { supabase } from '@/lib/supabase';
 import { resend } from '@/lib/resend';
 import { NewPostEmail } from '@/emails/NewPostEmail';
 
-const NEWSLETTER_SECRET = process.env.NEWSLETTER_SECRET;
 const SITE_URL =
     process.env.NEXT_PUBLIC_SITE_URL || 'https://rustwithrohan.com';
 
+// This route is protected by `src/middleware.js` which verifies the `admin_token` cookie.
+// No additional secret check is needed here as the middleware blocks unauthorized access.
 export async function POST(request) {
     try {
-        // Verify the secret to prevent unauthorized sends
-        const authHeader = request.headers.get('authorization');
         const body = await request.json();
-
-        const secret = authHeader?.replace('Bearer ', '') || body.secret;
-
-        if (!NEWSLETTER_SECRET || secret !== NEWSLETTER_SECRET) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
 
         if (!supabase) {
             return NextResponse.json(

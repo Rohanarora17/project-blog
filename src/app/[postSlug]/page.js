@@ -165,7 +165,7 @@ async function BlogPost({ params }) {
         readingTime={readingTime}
       />
       <div className={styles.page}>
-        {isSanity ? (
+        {isSanity && Array.isArray(content) ? (
           <PortableText
             value={content}
             components={portableTextComponents}

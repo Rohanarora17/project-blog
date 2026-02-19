@@ -31,6 +31,7 @@ const POST_QUERY = `*[_type == "post" && slug.current == $slug][0] {
   category,
   coverImage,
   body,
+  mdxContent,
   "readingTime": round(length(pt::text(body)) / 5 / ${WORDS_PER_MINUTE}) + " min read"
 }`;
 
@@ -61,7 +62,7 @@ async function loadSanityBlogPost(slug) {
       tags: post.tags || [],
       category: post.category || '',
     },
-    content: post.body, // Portable Text array
+    content: post.mdxContent || post.body, // Prefer raw MDX if available
     readingTime: post.readingTime || '1 min read',
     coverImage: post.coverImage,
     isSanity: true,
