@@ -96,15 +96,22 @@ async function getLocalBlogPostList() {
 }
 
 async function loadLocalBlogPost(slug) {
-  const rawContent = await readFile(`/content/${slug}.mdx`);
-  const { data: frontmatter, content } = matter(rawContent);
+  try {
+    const rawContent = await readFile(`/content/${slug}.mdx`);
+    const { data: frontmatter, content } = matter(rawContent);
 
-  return {
-    frontmatter,
-    content,
-    readingTime: calculateReadingTime(content),
-    isSanity: false,
-  };
+    return {
+      frontmatter,
+      content,
+      readingTime: calculateReadingTime(content),
+      isSanity: false,
+    };
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
 }
 
 async function getLocalSlugs() {

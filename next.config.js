@@ -3,6 +3,7 @@ module.exports = {
   experimental: {
     outputFileTracingIncludes: {
       '/': ['./content/**/*'],
+      '/[postSlug]': ['./content/**/*'],
     },
   },
   images: {
