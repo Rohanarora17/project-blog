@@ -121,19 +121,31 @@ async function getLocalSlugs() {
 
 // ─── Public API (auto-selects Sanity or local MDX) ─────────
 
+// ─── Public API (auto-selects Sanity or local MDX) ─────────
+
 const useSanity = !!projectId;
 
 export async function getBlogPostList() {
+  let sanityPosts = [];
   if (useSanity) {
     try {
-      const posts = await getSanityBlogPostList();
-      if (posts.length > 0) return posts;
-      // Sanity is empty — fall through to local MDX
+      sanityPosts = await getSanityBlogPostList();
     } catch (err) {
       console.warn('Sanity fetch failed, falling back to local MDX:', err.message);
     }
   }
-  return getLocalBlogPostList();
+
+  const localPosts = await getLocalBlogPostList();
+
+  // combine and deduplicate by slug
+  const allPosts = [...sanityPosts, ...localPosts];
+  const uniquePosts = Array.from(
+    new Map(allPosts.map((p) => [p.slug, p])).values()
+  );
+
+  return uniquePosts.sort((p1, p2) =>
+    new Date(p2.publishedOn) - new Date(p1.publishedOn)
+  );
 }
 
 export async function loadBlogPost(slug) {
@@ -149,14 +161,17 @@ export async function loadBlogPost(slug) {
 }
 
 export async function getAllPostSlugs() {
+  let sanitySlugs = [];
   if (useSanity) {
     try {
-      return await getSanitySlugs();
+      sanitySlugs = await getSanitySlugs();
     } catch (err) {
       console.warn('Sanity fetch failed, falling back to local MDX:', err.message);
     }
   }
-  return getLocalSlugs();
+
+  const localSlugs = await getLocalSlugs();
+  return Array.from(new Set([...sanitySlugs, ...localSlugs]));
 }
 
 // ─── File system helpers ───────────────────────────────────

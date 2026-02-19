@@ -8,6 +8,12 @@ export default function SubscribersPage() {
     const [loading, setLoading] = useState(true);
     const [sendingNewsletter, setSendingNewsletter] = useState(false);
     const [message, setMessage] = useState(null);
+    const [showNewsletterForm, setShowNewsletterForm] = useState(false);
+    const [newsletterData, setNewsletterData] = useState({
+        title: '',
+        abstract: '',
+        slug: ''
+    });
 
     async function fetchSubscribers() {
         try {
@@ -59,14 +65,14 @@ export default function SubscribersPage() {
         URL.revokeObjectURL(url);
     }
 
-    async function handleSendNewsletter() {
-        const title = prompt('Post title:');
-        if (!title) return;
-        const abstract = prompt('Post abstract:');
-        if (!abstract) return;
-        const slug = prompt('Post slug (URL path):');
-        if (!slug) return;
+    function openNewsletterForm() {
+        setNewsletterData({ title: '', abstract: '', slug: '' });
+        setShowNewsletterForm(true);
+        setMessage(null);
+    }
 
+    async function submitNewsletter(e) {
+        e.preventDefault();
         setSendingNewsletter(true);
         setMessage(null);
 
@@ -74,7 +80,10 @@ export default function SubscribersPage() {
             const res = await fetch('/api/newsletter/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, abstract, slug, secret: 'admin-manual' }),
+                body: JSON.stringify({
+                    ...newsletterData,
+                    secret: 'admin-manual'
+                }),
             });
 
             const result = await res.json();
@@ -86,6 +95,7 @@ export default function SubscribersPage() {
                     type: 'success',
                     text: `Newsletter sent to ${result.sent} subscriber${result.sent !== 1 ? 's' : ''}!`,
                 });
+                setShowNewsletterForm(false);
             }
         } catch {
             setMessage({ type: 'error', text: 'Failed to send newsletter' });
@@ -126,11 +136,11 @@ export default function SubscribersPage() {
 
             <div className={styles.btnGroup} style={{ marginBottom: 24 }}>
                 <button
-                    onClick={handleSendNewsletter}
+                    onClick={openNewsletterForm}
                     disabled={sendingNewsletter || !data?.active}
                     className={styles.btnPrimary}
                 >
-                    {sendingNewsletter ? 'Sending...' : '📧 Send Newsletter'}
+                    📧 Compose Newsletter
                 </button>
                 <button
                     onClick={handleExportCSV}
@@ -140,6 +150,67 @@ export default function SubscribersPage() {
                     📥 Export CSV
                 </button>
             </div>
+
+            {/* Newsletter Modal/Form */}
+            {showNewsletterForm && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modalContent}>
+                        <h2 className={styles.modalTitle}>Send Newsletter</h2>
+                        <form onSubmit={submitNewsletter}>
+                            <div className={styles.formGroup}>
+                                <label className={styles.formLabel}>Post Title</label>
+                                <input
+                                    type="text"
+                                    className={styles.formInput}
+                                    value={newsletterData.title}
+                                    onChange={(e) => setNewsletterData({ ...newsletterData, title: e.target.value })}
+                                    required
+                                    placeholder="e.g. Understanding Rust Ownership"
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label className={styles.formLabel}>Abstract / Excerpt</label>
+                                <textarea
+                                    className={styles.formTextarea}
+                                    value={newsletterData.abstract}
+                                    onChange={(e) => setNewsletterData({ ...newsletterData, abstract: e.target.value })}
+                                    required
+                                    placeholder="A brief summary of what this post is about..."
+                                    rows={3}
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label className={styles.formLabel}>Slug (URL Path)</label>
+                                <input
+                                    type="text"
+                                    className={styles.formInput}
+                                    value={newsletterData.slug}
+                                    onChange={(e) => setNewsletterData({ ...newsletterData, slug: e.target.value })}
+                                    required
+                                    placeholder="e.g. understanding-rust-ownership"
+                                />
+                            </div>
+                            <div className={styles.modalActions}>
+                                <button
+                                    type="button"
+                                    className={styles.btnSecondary}
+                                    onClick={() => setShowNewsletterForm(false)}
+                                    disabled={sendingNewsletter}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className={styles.btnPrimary}
+                                    disabled={sendingNewsletter}
+                                >
+                                    {sendingNewsletter ? 'Sending...' : '🚀 Send Now'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {subscribers.length > 0 ? (
                 <div className={styles.section}>
