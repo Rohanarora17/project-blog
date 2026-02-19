@@ -3,10 +3,11 @@ import { NextResponse } from 'next/server';
 export async function middleware(request) {
     const { pathname } = request.nextUrl;
 
-    // Protect /admin and /api/admin routes
+    // Protect /admin and /api/admin routes, but exclude login pages/APIs
     const isProtected =
         (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) &&
-        !pathname.startsWith('/admin/login');
+        !pathname.startsWith('/admin/login') &&
+        !pathname.startsWith('/api/admin/auth');
 
     if (isProtected) {
         const token = request.cookies.get('admin_token')?.value;
@@ -25,6 +26,8 @@ export async function middleware(request) {
                 .map((b) => b.toString(16).padStart(2, '0'))
                 .join('');
             isValid = (token === expectedToken);
+
+
         }
 
         if (!isValid) {

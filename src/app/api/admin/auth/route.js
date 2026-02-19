@@ -47,7 +47,9 @@ export async function POST(request) {
         }
 
         // Generate a session token
-        const tokenHash = hashPassword(adminPassword + process.env.NEWSLETTER_SECRET);
+        // Generate a session token
+        const secret = process.env.NEWSLETTER_SECRET || 'fallback-secret';
+        const tokenHash = hashPassword(adminPassword + secret);
 
         const response = NextResponse.json({ message: 'Authenticated' });
         response.cookies.set('admin_token', tokenHash, {
