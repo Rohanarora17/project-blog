@@ -119,7 +119,9 @@ const useSanity = !!projectId;
 export async function getBlogPostList() {
   if (useSanity) {
     try {
-      return await getSanityBlogPostList();
+      const posts = await getSanityBlogPostList();
+      if (posts.length > 0) return posts;
+      // Sanity is empty — fall through to local MDX
     } catch (err) {
       console.warn('Sanity fetch failed, falling back to local MDX:', err.message);
     }

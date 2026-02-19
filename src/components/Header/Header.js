@@ -1,6 +1,6 @@
 import React from 'react';
 import clsx from 'clsx';
-import { Rss, Sun, Moon } from 'react-feather';
+import { Rss, Lock } from 'react-feather';
 
 import Logo from '@/components/Logo';
 import VisuallyHidden from '@/components/VisuallyHidden';
@@ -17,10 +17,6 @@ function Header({ theme, className, ...delegated }) {
       <Logo />
 
       <div className={styles.actions}>
-         {/*
-          Turn the <button> into an <a>, so we can link
-          to the new `/rss.xml` route.
-        */}
         <a href="/rss.xml" className={styles.action}>
           <Rss
             size="1.5rem"
@@ -34,6 +30,12 @@ function Header({ theme, className, ...delegated }) {
           </VisuallyHidden>
         </a>
         <ToggleTheme initialTheme={theme}></ToggleTheme>
+        <a href="/admin" className={styles.action} title="Admin">
+          <Lock size="1.25rem" />
+          <VisuallyHidden>
+            Admin login
+          </VisuallyHidden>
+        </a>
       </div>
     </header>
   );

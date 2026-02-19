@@ -14,55 +14,50 @@ export async function POST(request) {
 
         const normalizedEmail = email.toLowerCase().trim();
 
-        // If Supabase is configured, use it
-        if (supabase) {
-            // Check if already subscribed
-            const { data: existing } = await supabase
-                .from('subscribers')
-                .select('id, is_active')
-                .eq('email', normalizedEmail)
-                .single();
+        if (!supabase) {
+            return NextResponse.json(
+                { error: 'Newsletter service is not configured.' },
+                { status: 503 }
+            );
+        }
 
-            if (existing) {
-                if (existing.is_active) {
-                    return NextResponse.json(
-                        { error: 'This email is already subscribed!' },
-                        { status: 409 }
-                    );
-                }
+        // Check if already subscribed
+        const { data: existing, error: selectError } = await supabase
+            .from('subscribers')
+            .select('id, is_active')
+            .eq('email', normalizedEmail)
+            .single();
 
-                // Re-activate if previously unsubscribed
-                const { error: updateError } = await supabase
-                    .from('subscribers')
-                    .update({ is_active: true, subscribed_at: new Date().toISOString() })
-                    .eq('id', existing.id);
+        if (selectError && selectError.code !== 'PGRST116') { // PGRST116 is "no rows found"
+            console.error('Supabase select error:', selectError);
+            if (selectError.code === 'PGRST205') {
+                return NextResponse.json(
+                    { error: 'Database setup required: Subscribers table missing.' },
+                    { status: 500 }
+                );
+            }
+            return NextResponse.json(
+                { error: 'Database connection failed.' },
+                { status: 500 }
+            );
+        }
 
-                if (updateError) {
-                    console.error('Resubscribe error:', updateError);
-                    return NextResponse.json(
-                        { error: 'Something went wrong. Please try again.' },
-                        { status: 500 }
-                    );
-                }
-
-                return NextResponse.json({
-                    message: 'Welcome back! You have been re-subscribed.',
-                });
+        if (existing) {
+            if (existing.is_active) {
+                return NextResponse.json(
+                    { error: 'This email is already subscribed!' },
+                    { status: 409 }
+                );
             }
 
-            // Insert new subscriber
-            const { error: insertError } = await supabase
+            // Re-activate if previously unsubscribed
+            const { error: updateError } = await supabase
                 .from('subscribers')
-                .insert({ email: normalizedEmail });
+                .update({ is_active: true, subscribed_at: new Date().toISOString() })
+                .eq('id', existing.id);
 
-            if (insertError) {
-                console.error('Subscribe error:', insertError);
-                if (insertError.code === '23505') {
-                    return NextResponse.json(
-                        { error: 'This email is already subscribed!' },
-                        { status: 409 }
-                    );
-                }
+            if (updateError) {
+                console.error('Resubscribe error:', updateError);
                 return NextResponse.json(
                     { error: 'Something went wrong. Please try again.' },
                     { status: 500 }
@@ -70,46 +65,31 @@ export async function POST(request) {
             }
 
             return NextResponse.json({
-                message: "You're subscribed! You'll get notified when new articles are published.",
+                message: 'Welcome back! You have been re-subscribed.',
             });
         }
 
-        // Fallback: store in local JSON file (dev mode)
-        const fs = await import('fs/promises');
-        const path = await import('path');
-        const dataDir = path.join(process.cwd(), 'data');
-        const filePath = path.join(dataDir, 'subscribers.json');
+        // Insert new subscriber
+        const { error: insertError } = await supabase
+            .from('subscribers')
+            .insert({ email: normalizedEmail });
 
-        try {
-            await fs.access(dataDir);
-        } catch {
-            await fs.mkdir(dataDir, { recursive: true });
-        }
-
-        let subscribers = [];
-        try {
-            const data = await fs.readFile(filePath, 'utf8');
-            subscribers = JSON.parse(data);
-        } catch {
-            // File doesn't exist yet
-        }
-
-        if (subscribers.some((s) => s.email === normalizedEmail)) {
+        if (insertError) {
+            console.error('Subscribe error:', insertError);
+            if (insertError.code === '23505') {
+                return NextResponse.json(
+                    { error: 'This email is already subscribed!' },
+                    { status: 409 }
+                );
+            }
             return NextResponse.json(
-                { error: 'This email is already subscribed!' },
-                { status: 409 }
+                { error: 'Something went wrong. Please try again.' },
+                { status: 500 }
             );
         }
 
-        subscribers.push({
-            email: normalizedEmail,
-            subscribedAt: new Date().toISOString(),
-        });
-
-        await fs.writeFile(filePath, JSON.stringify(subscribers, null, 2));
-
         return NextResponse.json({
-            message: "You're subscribed! (dev mode — stored locally)",
+            message: "You're subscribed! You'll get notified when new articles are published.",
         });
     } catch (error) {
         console.error('Subscribe error:', error);

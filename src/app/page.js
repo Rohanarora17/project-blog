@@ -1,7 +1,6 @@
 import React from 'react';
 
 import BlogSummaryCard from '@/components/BlogSummaryCard';
-import Newsletter from '@/components/Newsletter';
 
 import styles from './homepage.module.css';
 import { getBlogPostList } from '@/helpers/file-helpers';
@@ -57,8 +56,6 @@ function Home() {
       <React.Suspense fallback={<Spinner />}>
         <LoadFiles />
       </React.Suspense>
-
-      <Newsletter />
     </div>
   );
 }

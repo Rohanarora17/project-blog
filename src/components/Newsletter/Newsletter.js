@@ -2,10 +2,12 @@
 import React from 'react';
 import styles from './Newsletter.module.css';
 
-function Newsletter() {
+function Newsletter({ inline = false }) {
     const [email, setEmail] = React.useState('');
     const [status, setStatus] = React.useState('idle');
     const [message, setMessage] = React.useState('');
+
+    const wrapperClass = inline ? styles.wrapperInline : styles.wrapper;
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -38,7 +40,7 @@ function Newsletter() {
 
     if (status === 'success') {
         return (
-            <div className={styles.wrapper}>
+            <div className={wrapperClass}>
                 <div className={styles.successMessage}>
                     <span className={styles.successIcon}>✓</span>
                     <p>{message}</p>
@@ -48,7 +50,7 @@ function Newsletter() {
     }
 
     return (
-        <div className={styles.wrapper}>
+        <div className={wrapperClass}>
             <h2 className={styles.heading}>Stay Updated</h2>
             <p className={styles.description}>
                 Get notified when I publish new articles. No spam, unsubscribe anytime.

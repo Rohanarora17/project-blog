@@ -32,7 +32,7 @@ function Footer() {
           </ul>
         </nav>
         <div className={styles.newsletterSection}>
-          <Newsletter />
+          <Newsletter inline />
         </div>
       </div>
     </div>
