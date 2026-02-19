@@ -11,6 +11,7 @@ import DivisionGroupsDemo from '@/components/DivisionGroupsDemo';
 import CircularColorsDemo from '@/components/CircularColorsDemo';
 
 import BlogHero from '@/components/BlogHero';
+import MDXImage from '@/components/MDXImage/MDXImage';
 
 import styles from './postSlug.module.css';
 
@@ -174,6 +175,7 @@ async function BlogPost({ params }) {
             source={content}
             components={{
               pre: CodeSnippet,
+              img: (props) => <MDXImage {...props} />,
               DivisionGroupsDemo,
               CircularColorsDemo,
             }}
