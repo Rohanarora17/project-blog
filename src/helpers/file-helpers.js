@@ -11,8 +11,7 @@ import {
 const WORDS_PER_MINUTE = 200;
 const LOCAL_CONTENT_DIR = '/content';
 const isLocalContentEnabled =
-    process.env.NODE_ENV !== 'production' ||
-    process.env.ENABLE_LOCAL_CONTENT === 'true';
+    process.env.ENABLE_LOCAL_CONTENT !== 'false';
 
 const POSTS_QUERY = `*[_type == "post"] | order(publishedAt desc) {
   title,
@@ -177,15 +176,33 @@ async function getLocalSlugs() {
 }
 
 async function getPublicBlogPostList() {
+    const localPosts = isLocalContentEnabled
+        ? await getLocalBlogPostList()
+        : [];
+
     try {
-        return await getSanityBlogPostList();
+        const sanityPosts = await getSanityBlogPostList();
+
+        if (!localPosts.length) {
+            return sanityPosts;
+        }
+
+        const combinedPosts = [...sanityPosts, ...localPosts];
+        const uniquePosts = Array.from(
+            new Map(combinedPosts.map((post) => [post.slug, post])).values()
+        );
+
+        return uniquePosts.sort(
+            (left, right) =>
+                new Date(right.publishedOn) - new Date(left.publishedOn)
+        );
     } catch (error) {
         if (isLocalContentEnabled) {
             console.warn(
-                'Sanity fetch failed, falling back to local content:',
+                'Sanity fetch failed, falling back to local content only:',
                 error.message
             );
-            return getLocalBlogPostList();
+            return localPosts;
         }
 
         throw error;
@@ -200,14 +217,14 @@ async function getPublicBlogPost(slug) {
             return post;
         }
     } catch (error) {
-        if (!isLocalContentEnabled) {
+        if (isLocalContentEnabled) {
+            console.warn(
+                'Sanity post fetch failed, falling back to local content:',
+                error.message
+            );
+        } else {
             throw error;
         }
-
-        console.warn(
-            'Sanity post fetch failed, falling back to local content:',
-            error.message
-        );
     }
 
     if (isLocalContentEnabled) {
@@ -218,15 +235,18 @@ async function getPublicBlogPost(slug) {
 }
 
 async function getPublicPostSlugs() {
+    const localSlugs = isLocalContentEnabled ? await getLocalSlugs() : [];
+
     try {
-        return await getSanitySlugs();
+        const sanitySlugs = await getSanitySlugs();
+        return Array.from(new Set([...sanitySlugs, ...localSlugs]));
     } catch (error) {
         if (isLocalContentEnabled) {
             console.warn(
-                'Sanity slug fetch failed, falling back to local content:',
+                'Sanity slug fetch failed, falling back to local content only:',
                 error.message
             );
-            return getLocalSlugs();
+            return localSlugs;
         }
 
         throw error;

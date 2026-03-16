@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 module.exports = {
   reactStrictMode: true,
+  experimental: {
+    outputFileTracingIncludes: {
+      '/': ['./content/**/*'],
+      '/[postSlug]': ['./content/**/*'],
+      '/rss.xml': ['./content/**/*'],
+      '/sitemap.xml': ['./content/**/*'],
+    },
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
