@@ -101,7 +101,9 @@ function RootLayout({ children }) {
       data-color-theme="dark"
     >
       <head>
-        <style>{THEME_TOKEN_STYLES}</style>
+        <style
+          dangerouslySetInnerHTML={{ __html: THEME_TOKEN_STYLES }}
+        />
         <script
           id="theme-init"
           dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
