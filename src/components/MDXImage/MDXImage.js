@@ -3,7 +3,7 @@ import Image from 'next/image';
 
 import styles from './MDXImage.module.css';
 
-function MDXImage({ src, alt, ...props }) {
+function MDXImage({ src, alt, priority = false, ...props }) {
     // If it's an external URL (http), fallback to standard img or configure remotePatterns
     // If it's a local path (starts with /), use next/image
 
@@ -16,6 +16,10 @@ function MDXImage({ src, alt, ...props }) {
                     width={800}
                     height={450} // Aspect ratio placeholder, CSS handles actual size
                     className={styles.image}
+                    priority={priority}
+                    loading={priority ? 'eager' : props.loading}
+                    fetchPriority={priority ? 'high' : props.fetchPriority}
+                    sizes={props.sizes || '(min-width: 900px) 800px, 100vw'}
                     {...props}
                 />
                 {alt && <span className={styles.caption}>{alt}</span>}

@@ -1,5 +1,4 @@
 import React from "react";
-import Link from "next/link";
 
 import Logo from "@/components/Logo";
 import Newsletter from "@/components/Newsletter";
@@ -21,7 +20,7 @@ function Footer() {
           <h2 className={styles.linkHeading}>Links</h2>
           <ul className={styles.linkList}>
             <li>
-              <Link href="/rss.xml">RSS feed</Link>
+              <a href="/rss.xml">RSS feed</a>
             </li>
             <li>
               <a href="https://github.com/Rohanarora17">Github</a>

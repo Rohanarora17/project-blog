@@ -59,63 +59,6 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// Portable Text components for rendering Sanity content
-const portableTextComponents = {
-  types: {
-    image: ({ value }) => {
-      if (!value?.asset?.url) return null;
-
-      const dimensions = value.asset.metadata?.dimensions || {};
-      const width = dimensions.width || 1200;
-      const height = dimensions.height || 675;
-
-      return (
-        <figure style={{ margin: '2rem 0' }}>
-          <Image
-            src={urlFor(value).width(1200).auto('format').url()}
-            alt={value.alt || ''}
-            width={width}
-            height={height}
-            sizes="(min-width: 900px) 800px, 100vw"
-            style={{ width: '100%', height: 'auto', borderRadius: '8px' }}
-          />
-          {value.caption && (
-            <figcaption
-              style={{
-                textAlign: 'center',
-                color: '#888',
-                fontSize: '0.875rem',
-                marginTop: '0.5rem',
-              }}
-            >
-              {value.caption}
-            </figcaption>
-          )}
-        </figure>
-      );
-    },
-    code: ({ value }) => (
-      <pre data-lang={value.language}>
-        <code>{value.code}</code>
-      </pre>
-    ),
-  },
-  marks: {
-    link: ({ children, value }) => (
-      <a href={value.href} target="_blank" rel="noopener noreferrer">
-        {children}
-      </a>
-    ),
-    code: ({ children }) => <code>{children}</code>,
-  },
-  block: {
-    h2: ({ children }) => <h2>{children}</h2>,
-    h3: ({ children }) => <h3>{children}</h3>,
-    h4: ({ children }) => <h4>{children}</h4>,
-    blockquote: ({ children }) => <blockquote>{children}</blockquote>,
-  },
-};
-
 async function BlogPost({ params }) {
   const blogPostData = await loadBlogPost(params.postSlug);
 
@@ -125,6 +68,8 @@ async function BlogPost({ params }) {
 
   const { frontmatter, content, readingTime, isSanity } = blogPostData;
   const readingMinutes = Number.parseInt(readingTime, 10) || 1;
+  let portableTextImageIndex = 0;
+  let mdxImageIndex = 0;
 
   // Build word count for JSON-LD based on content type
   let wordCount = 0;
@@ -161,6 +106,67 @@ async function BlogPost({ params }) {
     timeRequired: `PT${readingMinutes}M`,
   };
 
+  const portableTextComponents = {
+    types: {
+      image: ({ value }) => {
+        if (!value?.asset?.url) return null;
+
+        const dimensions = value.asset.metadata?.dimensions || {};
+        const width = dimensions.width || 1200;
+        const height = dimensions.height || 675;
+        const isPriorityImage = portableTextImageIndex === 0;
+        portableTextImageIndex += 1;
+
+        return (
+          <figure style={{ margin: '2rem 0' }}>
+            <Image
+              src={urlFor(value).width(1200).auto('format').url()}
+              alt={value.alt || ''}
+              width={width}
+              height={height}
+              priority={isPriorityImage}
+              loading={isPriorityImage ? 'eager' : 'lazy'}
+              fetchPriority={isPriorityImage ? 'high' : 'auto'}
+              sizes="(min-width: 900px) 800px, 100vw"
+              style={{ width: '100%', height: 'auto', borderRadius: '8px' }}
+            />
+            {value.caption && (
+              <figcaption
+                style={{
+                  textAlign: 'center',
+                  color: '#888',
+                  fontSize: '0.875rem',
+                  marginTop: '0.5rem',
+                }}
+              >
+                {value.caption}
+              </figcaption>
+            )}
+          </figure>
+        );
+      },
+      code: ({ value }) => (
+        <pre data-lang={value.language}>
+          <code>{value.code}</code>
+        </pre>
+      ),
+    },
+    marks: {
+      link: ({ children, value }) => (
+        <a href={value.href} target="_blank" rel="noopener noreferrer">
+          {children}
+        </a>
+      ),
+      code: ({ children }) => <code>{children}</code>,
+    },
+    block: {
+      h2: ({ children }) => <h2>{children}</h2>,
+      h3: ({ children }) => <h3>{children}</h3>,
+      h4: ({ children }) => <h4>{children}</h4>,
+      blockquote: ({ children }) => <blockquote>{children}</blockquote>,
+    },
+  };
+
   return (
     <article className={styles.wrapper}>
       <script
@@ -183,7 +189,17 @@ async function BlogPost({ params }) {
             source={content}
             components={{
               pre: CodeSnippet,
-              img: (props) => <MDXImage {...props} />,
+              img: (props) => {
+                const isPriorityImage = mdxImageIndex === 0;
+                mdxImageIndex += 1;
+
+                return (
+                  <MDXImage
+                    {...props}
+                    priority={isPriorityImage}
+                  />
+                );
+              },
               DivisionGroupsDemo,
               CircularColorsDemo,
             }}

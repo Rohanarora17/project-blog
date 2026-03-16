@@ -507,7 +507,7 @@ const theme = {
         'wildcard.comment',
       ],
       settings: {
-        foreground: '#6272A4',
+        foreground: '#6E80B4',
       },
     },
     {
