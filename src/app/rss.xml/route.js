@@ -5,8 +5,12 @@ import {
   BLOG_DESCRIPTION,
 } from '@/constants';
 import { getBlogPostList } from '@/helpers/file-helpers';
+import {
+  PUBLIC_REVALIDATE_SECONDS,
+  SITE_URL,
+} from '@/lib/site-config';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rustwithrohan.com';
+export const revalidate = PUBLIC_REVALIDATE_SECONDS;
 
 export async function GET() {
   const feed = new RSS({

@@ -1,8 +1,5 @@
-import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-
-const SITE_URL =
-    process.env.NEXT_PUBLIC_SITE_URL || 'https://rustwithrohan.com';
+import { SITE_URL } from '@/lib/site-config';
 
 export async function GET(request) {
     const { searchParams } = new URL(request.url);

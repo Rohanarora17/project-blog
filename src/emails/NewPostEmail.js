@@ -1,11 +1,12 @@
 import React from 'react';
+import { SITE_URL } from '@/lib/site-config';
 
-const SITE_URL =
-    process.env.NEXT_PUBLIC_SITE_URL || 'https://rustwithrohan.com';
-
-export function NewPostEmail({ title, abstract, slug }) {
+export function NewPostEmail({ title, abstract, slug, email }) {
     const postUrl = `${SITE_URL}/${slug}`;
     const unsubscribeUrl = `${SITE_URL}/api/newsletter/unsubscribe`;
+    const unsubscribeHref = email
+        ? `${unsubscribeUrl}?email=${encodeURIComponent(email)}`
+        : unsubscribeUrl;
 
     return (
         <div
@@ -95,7 +96,7 @@ export function NewPostEmail({ title, abstract, slug }) {
                 >
                     You received this because you subscribed to Rust with Rohan.{' '}
                     <a
-                        href={`${unsubscribeUrl}?email={{email}}`}
+                        href={unsubscribeHref}
                         style={{ color: '#888', textDecoration: 'underline' }}
                     >
                         Unsubscribe

@@ -2,37 +2,30 @@
 import React from 'react';
 import { Sun, Moon } from 'react-feather';
 import Cookie from 'js-cookie';
-
-import { LIGHT_TOKENS, DARK_TOKENS } from '@/constants';
 import VisuallyHidden from '@/components/VisuallyHidden';
+import { DEFAULT_THEME, THEME_COOKIE_NAME } from '@/lib/theme';
 
 import styles from  '../Header/Header.module.css';
 
-function ToggleTheme({ initialTheme }) {
-  const [theme, setTheme] = React.useState(initialTheme);
+function ToggleTheme() {
+  const [theme, setTheme] = React.useState(DEFAULT_THEME);
+
+  React.useEffect(() => {
+    const root = document.documentElement;
+    const activeTheme =
+      root.getAttribute('data-color-theme') || DEFAULT_THEME;
+
+    setTheme(activeTheme);
+  }, []);
 
   function handleClick() {
     const nextTheme = theme === 'light' ? 'dark' : 'light';
-
-    
     setTheme(nextTheme);
-
-    
-    Cookie.set('color-theme', nextTheme, {
+    Cookie.set(THEME_COOKIE_NAME, nextTheme, {
       expires: 1000,
     });
-
-    
-    const root = document.documentElement;
-    const colors = nextTheme === 'light' ? LIGHT_TOKENS : DARK_TOKENS;
-
-    
-    root.setAttribute('data-color-theme', nextTheme);
-
-  
-    Object.entries(colors).forEach(([key, value]) => {
-      root.style.setProperty(key, value);
-    });
+    window.localStorage.setItem(THEME_COOKIE_NAME, nextTheme);
+    document.documentElement.setAttribute('data-color-theme', nextTheme);
   }
 
   return (

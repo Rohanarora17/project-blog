@@ -6,20 +6,34 @@ import styles from './admin.module.css';
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState(null);
+    const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         async function fetchStats() {
             try {
-                const [postsRes, subsRes] = await Promise.all([
+                const [postsRes, subsRes, healthRes] = await Promise.all([
                     fetch('/api/admin/posts'),
                     fetch('/api/admin/subscribers'),
+                    fetch('/api/admin/health'),
                 ]);
-                const posts = await postsRes.json();
+                const postsData = await postsRes.json();
                 const subscribers = await subsRes.json();
-                setStats({ posts, subscribers });
+                const health = await healthRes.json();
+
+                setStats({
+                    posts: Array.isArray(postsData) ? postsData : [],
+                    subscribers,
+                    health,
+                });
+                setError(
+                    !postsRes.ok && postsData?.error
+                        ? postsData.error
+                        : ''
+                );
             } catch (err) {
                 console.error('Failed to load stats:', err);
+                setError('Failed to load dashboard data.');
             } finally {
                 setLoading(false);
             }
@@ -40,6 +54,7 @@ export default function AdminDashboard() {
     const subscriberCount = stats?.subscribers?.total || 0;
     const activeSubscribers = stats?.subscribers?.active || 0;
     const recentSubs = stats?.subscribers?.recent || [];
+    const serviceHealth = stats?.health?.services || {};
 
     return (
         <>
@@ -49,6 +64,8 @@ export default function AdminDashboard() {
                     Welcome back — here&apos;s your blog at a glance
                 </p>
             </div>
+
+            {error && <div className={styles.errorMsg}>{error}</div>}
 
             <div className={styles.statsGrid}>
                 <div className={styles.statCard}>
@@ -66,6 +83,45 @@ export default function AdminDashboard() {
                     <p className={styles.statLabel}>Active Subscribers</p>
                     <p className={styles.statValue}>{activeSubscribers}</p>
                 </div>
+                <div className={styles.statCard}>
+                    <span className={styles.statIcon}>⚡</span>
+                    <p className={styles.statLabel}>Content Backend</p>
+                    <p className={styles.statValue}>
+                        {serviceHealth.sanityRead ? 'Sanity' : 'Unavailable'}
+                    </p>
+                </div>
+            </div>
+
+            <div className={styles.section}>
+                <h2 className={styles.sectionTitle}>Publishing Health</h2>
+                <table className={styles.table}>
+                    <tbody>
+                        <tr>
+                            <th>Site URL</th>
+                            <td>{stats?.health?.siteUrl || 'Unavailable'}</td>
+                        </tr>
+                        <tr>
+                            <th>Sanity Read</th>
+                            <td>{serviceHealth.sanityRead ? 'Configured' : 'Missing'}</td>
+                        </tr>
+                        <tr>
+                            <th>Sanity Write</th>
+                            <td>{serviceHealth.sanityWrite ? 'Configured' : 'Missing'}</td>
+                        </tr>
+                        <tr>
+                            <th>Supabase Admin</th>
+                            <td>{serviceHealth.supabaseAdmin ? 'Configured' : 'Missing'}</td>
+                        </tr>
+                        <tr>
+                            <th>Resend</th>
+                            <td>{serviceHealth.resend ? 'Configured' : 'Missing'}</td>
+                        </tr>
+                        <tr>
+                            <th>Studio</th>
+                            <td>{stats?.health?.studioEnabled ? 'Enabled' : 'Disabled'}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <div className={styles.section}>

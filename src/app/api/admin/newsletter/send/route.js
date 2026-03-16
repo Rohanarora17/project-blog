@@ -2,9 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { resend } from '@/lib/resend';
 import { NewPostEmail } from '@/emails/NewPostEmail';
-
-const SITE_URL =
-    process.env.NEXT_PUBLIC_SITE_URL || 'https://rustwithrohan.com';
+import { SITE_URL } from '@/lib/site-config';
 
 // This route is protected by `src/middleware.js` which verifies the `admin_token` cookie.
 // No additional secret check is needed here as the middleware blocks unauthorized access.
@@ -78,6 +76,7 @@ export async function POST(request) {
                             title,
                             abstract,
                             slug,
+                            email: subscriber.email,
                         }),
                         headers: {
                             'List-Unsubscribe': `<${unsubscribeUrl}>`,

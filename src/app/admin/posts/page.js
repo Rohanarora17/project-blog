@@ -6,12 +6,21 @@ import styles from '../admin.module.css';
 
 export default function PostsPage() {
     const [posts, setPosts] = useState([]);
+    const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetch('/api/admin/posts')
             .then((res) => res.json())
-            .then(setPosts)
+            .then((result) => {
+                if (Array.isArray(result)) {
+                    setPosts(result);
+                    return;
+                }
+
+                setError(result.error || 'Failed to load posts');
+                setPosts([]);
+            })
             .catch(console.error)
             .finally(() => setLoading(false));
     }, []);
@@ -39,6 +48,8 @@ export default function PostsPage() {
                     ✍️ New Post
                 </Link>
             </div>
+
+            {error && <div className={styles.errorMsg}>{error}</div>}
 
             {posts.length > 0 ? (
                 <div className={styles.section}>

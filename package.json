@@ -2,6 +2,7 @@
   "name": "project-blog",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.9.2",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -33,6 +34,9 @@
     "resend": "^6.9.2",
     "rss": "^1.2.2",
     "sanity": "^3.99.0"
+  },
+  "overrides": {
+    "next-mdx-remote": "^6.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.5",

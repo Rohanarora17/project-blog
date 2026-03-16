@@ -6,6 +6,7 @@ import styles from '../admin.module.css';
 export default function SubscribersPage() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const [sendingNewsletter, setSendingNewsletter] = useState(false);
     const [message, setMessage] = useState(null);
     const [showNewsletterForm, setShowNewsletterForm] = useState(false);
@@ -19,9 +20,11 @@ export default function SubscribersPage() {
         try {
             const res = await fetch('/api/admin/subscribers');
             const result = await res.json();
+            setLoadError(res.ok ? '' : result.error || 'Failed to load subscribers');
             setData(result);
         } catch (err) {
             console.error(err);
+            setLoadError('Failed to load subscribers');
         } finally {
             setLoading(false);
         }
@@ -130,6 +133,8 @@ export default function SubscribersPage() {
                     {message.text}
                 </div>
             )}
+
+            {loadError && <div className={styles.errorMsg}>{loadError}</div>}
 
             <div className={styles.btnGroup} style={{ marginBottom: 24 }}>
                 <button

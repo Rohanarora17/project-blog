@@ -6,9 +6,10 @@ import { LIGHT_TOKENS, DARK_TOKENS, BLOG_TITLE, BLOG_DESCRIPTION } from "@/const
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import "./styles.css";
-import { cookies } from "next/headers";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { SITE_URL } from "@/lib/site-config";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 const mainFont = Work_Sans({
   subsets: ["latin"],
@@ -24,7 +25,19 @@ const monoFont = Spline_Sans_Mono({
 });
 
 const GOOGLE_ANALYTICS_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rustwithrohan.com";
+
+function serializeThemeTokens(selector, tokens) {
+  const cssVariables = Object.entries(tokens)
+    .map(([key, value]) => `${key}: ${value};`)
+    .join(" ");
+
+  return `${selector} { ${cssVariables} }`;
+}
+
+const THEME_TOKEN_STYLES = `
+${serializeThemeTokens('html[data-color-theme="light"]', LIGHT_TOKENS)}
+${serializeThemeTokens('html[data-color-theme="dark"]', DARK_TOKENS)}
+`;
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
@@ -76,18 +89,22 @@ export const viewport = {
 };
 
 function RootLayout({ children }) {
-  const savedTheme = cookies().get("color-theme");
-  const theme = savedTheme?.value || "dark";
-
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={clsx(mainFont.variable, monoFont.variable)}
-      data-color-theme={theme}
-      style={theme === "light" ? LIGHT_TOKENS : DARK_TOKENS}
+      data-color-theme="dark"
     >
+      <head>
+        <style>{THEME_TOKEN_STYLES}</style>
+        <script
+          id="theme-init"
+          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+        />
+      </head>
       <body>
-        <Header theme={theme} />
+        <Header />
         <main>{children}</main>
         <Footer />
         <Analytics mode={"production"} />

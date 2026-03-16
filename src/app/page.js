@@ -4,20 +4,23 @@ import BlogSummaryCard from '@/components/BlogSummaryCard';
 
 import styles from './homepage.module.css';
 import { getBlogPostList } from '@/helpers/file-helpers';
-import Spinner from '@/components/Spinner';
 import { BLOG_DESCRIPTION, BLOG_TITLE } from '@/constants';
+import {
+  PUBLIC_REVALIDATE_SECONDS,
+  SITE_URL,
+} from '@/lib/site-config';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rustwithrohan.com';
+export const revalidate = PUBLIC_REVALIDATE_SECONDS;
 
 export const metadata = {
   title: `${BLOG_TITLE}`,
   description: BLOG_DESCRIPTION,
 };
 
-async function LoadFiles() {
+async function BlogPostList() {
   const files = await getBlogPostList();
 
-  return files.map((blog, index) => (
+  return files.map((blog) => (
     <BlogSummaryCard
       key={blog.slug}
       slug={blog.slug}
@@ -29,7 +32,7 @@ async function LoadFiles() {
   ));
 }
 
-function Home() {
+async function Home() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Blog',
@@ -43,6 +46,8 @@ function Home() {
     },
   };
 
+  const posts = await BlogPostList();
+
   return (
     <div className={styles.wrapper}>
       <script
@@ -52,10 +57,7 @@ function Home() {
       <h1 className={styles.mainHeading}>
         Latest Content:
       </h1>
-
-      <React.Suspense fallback={<Spinner />}>
-        <LoadFiles />
-      </React.Suspense>
+      {posts}
     </div>
   );
 }

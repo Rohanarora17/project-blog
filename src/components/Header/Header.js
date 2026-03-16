@@ -8,7 +8,7 @@ import VisuallyHidden from '@/components/VisuallyHidden';
 import styles from './Header.module.css';
 import ToggleTheme from '../ToggleTheme';
 
-function Header({ theme, className, ...delegated }) {
+function Header({ className, ...delegated }) {
   return (
     <header
       className={clsx(styles.wrapper, className)}
@@ -29,7 +29,7 @@ function Header({ theme, className, ...delegated }) {
             View RSS feed
           </VisuallyHidden>
         </a>
-        <ToggleTheme initialTheme={theme}></ToggleTheme>
+        <ToggleTheme />
         <a href="/admin" className={styles.action} title="Admin">
           <Lock size="1.25rem" />
           <VisuallyHidden>

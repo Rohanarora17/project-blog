@@ -1,34 +1,28 @@
 import { NextResponse } from 'next/server';
+import { verifyAdminSessionToken } from '@/lib/admin-auth-edge';
+import {
+    ADMIN_SESSION_COOKIE,
+    ADMIN_STUDIO_ENABLED,
+} from '@/lib/site-config';
 
 export async function middleware(request) {
     const { pathname } = request.nextUrl;
 
     // Protect /admin and /api/admin routes, but exclude login pages/APIs
     const isProtected =
-        (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) &&
+        (pathname.startsWith('/admin') ||
+            pathname.startsWith('/api/admin') ||
+            pathname.startsWith('/studio')) &&
         !pathname.startsWith('/admin/login') &&
         !pathname.startsWith('/api/admin/auth');
 
     if (isProtected) {
-        const token = request.cookies.get('admin_token')?.value;
-
-        // Validate token using Web Crypto
-        const password = process.env.ADMIN_PASSWORD || '';
-        const secret = process.env.NEWSLETTER_SECRET || 'fallback-secret';
-
-        let isValid = false;
-        if (token) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(password + secret);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const expectedToken = hashArray
-                .map((b) => b.toString(16).padStart(2, '0'))
-                .join('');
-            isValid = (token === expectedToken);
-
-
+        if (pathname.startsWith('/studio') && !ADMIN_STUDIO_ENABLED) {
+            return NextResponse.redirect(new URL('/admin', request.url));
         }
+
+        const token = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+        const isValid = await verifyAdminSessionToken(token);
 
         if (!isValid) {
             // Return 401 for API routes
@@ -49,5 +43,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-    matcher: ['/admin/:path*', '/api/admin/:path*'],
+    matcher: ['/admin/:path*', '/api/admin/:path*', '/studio/:path*'],
 };

@@ -2,6 +2,7 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import { PortableText } from '@portabletext/react';
+import Image from 'next/image';
 
 import { BLOG_TITLE } from '@/constants';
 import { loadBlogPost, getAllPostSlugs } from '@/helpers/file-helpers';
@@ -12,11 +13,15 @@ import CircularColorsDemo from '@/components/CircularColorsDemo';
 
 import BlogHero from '@/components/BlogHero';
 import MDXImage from '@/components/MDXImage/MDXImage';
+import {
+  PUBLIC_REVALIDATE_SECONDS,
+  SITE_URL,
+} from '@/lib/site-config';
 
 import styles from './postSlug.module.css';
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || 'https://rustwithrohan.com';
+export const revalidate = PUBLIC_REVALIDATE_SECONDS;
+export const dynamicParams = true;
 
 export async function generateStaticParams() {
   const slugs = await getAllPostSlugs();
@@ -58,19 +63,21 @@ export async function generateMetadata({ params }) {
 const portableTextComponents = {
   types: {
     image: ({ value }) => {
-      if (!value?.asset?._ref) return null;
+      if (!value?.asset?.url) return null;
+
+      const dimensions = value.asset.metadata?.dimensions || {};
+      const width = dimensions.width || 1200;
+      const height = dimensions.height || 675;
+
       return (
         <figure style={{ margin: '2rem 0' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={urlFor(value).width(800).format('webp').url()}
+          <Image
+            src={urlFor(value).width(1200).auto('format').url()}
             alt={value.alt || ''}
-            style={{
-              width: '100%',
-              height: 'auto',
-              borderRadius: '8px',
-            }}
-            loading="lazy"
+            width={width}
+            height={height}
+            sizes="(min-width: 900px) 800px, 100vw"
+            style={{ width: '100%', height: 'auto', borderRadius: '8px' }}
           />
           {value.caption && (
             <figcaption
@@ -117,6 +124,7 @@ async function BlogPost({ params }) {
   }
 
   const { frontmatter, content, readingTime, isSanity } = blogPostData;
+  const readingMinutes = Number.parseInt(readingTime, 10) || 1;
 
   // Build word count for JSON-LD based on content type
   let wordCount = 0;
@@ -128,9 +136,9 @@ async function BlogPost({ params }) {
         block.children?.map((child) => child.text || '').join(' ')
       )
       .join(' ');
-    wordCount = textBlocks.trim().split(/\s+/).length;
+    wordCount = textBlocks.trim().split(/\s+/).filter(Boolean).length;
   } else if (typeof content === 'string') {
-    wordCount = content.trim().split(/\s+/).length;
+    wordCount = content.trim().split(/\s+/).filter(Boolean).length;
   }
 
   const jsonLd = {
@@ -150,7 +158,7 @@ async function BlogPost({ params }) {
     },
     url: `${SITE_URL}/${params.postSlug}`,
     wordCount,
-    timeRequired: `PT${readingTime}M`,
+    timeRequired: `PT${readingMinutes}M`,
   };
 
   return (

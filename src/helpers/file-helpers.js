@@ -1,16 +1,18 @@
 import fs from 'fs/promises';
 import path from 'path';
 import matter from 'gray-matter';
-import { client, projectId } from '@/sanity/lib/client';
+import { unstable_cache } from 'next/cache';
+import { client, projectId, writeClient } from '@/sanity/lib/client';
+import {
+    PUBLIC_CONTENT_TAG,
+    PUBLIC_REVALIDATE_SECONDS,
+} from '@/lib/site-config';
 
 const WORDS_PER_MINUTE = 200;
-
-function calculateReadingTime(content) {
-  const words = content.trim().split(/\s+/).length;
-  return `${Math.ceil(words / WORDS_PER_MINUTE)} min read`;
-}
-
-// ─── Sanity-backed functions ───────────────────────────────
+const LOCAL_CONTENT_DIR = '/content';
+const isLocalContentEnabled =
+    process.env.NODE_ENV !== 'production' ||
+    process.env.ENABLE_LOCAL_CONTENT === 'true';
 
 const POSTS_QUERY = `*[_type == "post"] | order(publishedAt desc) {
   title,
@@ -19,7 +21,7 @@ const POSTS_QUERY = `*[_type == "post"] | order(publishedAt desc) {
   publishedAt,
   tags,
   category,
-  "readingTime": round(length(pt::text(body)) / 5 / ${WORDS_PER_MINUTE}) + " min read"
+  "readingTime": coalesce(round(length(pt::text(body)) / 5 / ${WORDS_PER_MINUTE}), 0) + " min read"
 }`;
 
 const POST_QUERY = `*[_type == "post" && slug.current == $slug][0] {
@@ -29,158 +31,275 @@ const POST_QUERY = `*[_type == "post" && slug.current == $slug][0] {
   publishedAt,
   tags,
   category,
-  coverImage,
-  body,
+  coverImage{
+    ...,
+    asset->{
+      _id,
+      url,
+      metadata {
+        dimensions
+      }
+    }
+  },
+  body[]{
+    ...,
+    _type == "image" => {
+      ...,
+      asset->{
+        _id,
+        url,
+        metadata {
+          dimensions
+        }
+      }
+    }
+  },
   mdxContent,
-  "readingTime": round(length(pt::text(body)) / 5 / ${WORDS_PER_MINUTE}) + " min read"
+  "readingTime": coalesce(round(length(pt::text(body)) / 5 / ${WORDS_PER_MINUTE}), 0) + " min read"
 }`;
 
-const SLUGS_QUERY = `*[_type == "post"] { "slug": slug.current }`;
+const SLUGS_QUERY = `*[_type == "post"] | order(publishedAt desc) { "slug": slug.current }`;
+
+function calculateReadingTime(content) {
+    const words = content.trim().split(/\s+/).filter(Boolean).length;
+    return `${Math.max(1, Math.ceil(words / WORDS_PER_MINUTE))} min read`;
+}
+
+function assertSanityClient() {
+    if (!client) {
+        throw new Error(
+            'Sanity client is not configured. Set NEXT_PUBLIC_SANITY_PROJECT_ID and NEXT_PUBLIC_SANITY_DATASET.'
+        );
+    }
+
+    return client;
+}
+
+function normalizePostSummary(post) {
+    return {
+        slug: post.slug,
+        title: post.title,
+        abstract: post.abstract,
+        publishedOn: post.publishedAt,
+        tags: post.tags || [],
+        category: post.category || '',
+        readingTime: normalizeReadingTime(post.readingTime),
+    };
+}
+
+function normalizeReadingTime(readingTime) {
+    if (!readingTime || readingTime === '0 min read') {
+        return '1 min read';
+    }
+
+    return readingTime;
+}
 
 async function getSanityBlogPostList() {
-  const posts = await client.fetch(POSTS_QUERY);
-  return posts.map((post) => ({
-    slug: post.slug,
-    title: post.title,
-    abstract: post.abstract,
-    publishedOn: post.publishedAt,
-    tags: post.tags || [],
-    category: post.category || '',
-    readingTime: post.readingTime || '1 min read',
-  }));
+    const sanityClient = assertSanityClient();
+    const posts = await sanityClient.fetch(POSTS_QUERY);
+    return posts.map(normalizePostSummary);
 }
 
 async function loadSanityBlogPost(slug) {
-  const post = await client.fetch(POST_QUERY, { slug });
-  if (!post) return null;
-  return {
-    slug: post.slug,
-    frontmatter: {
-      title: post.title,
-      abstract: post.abstract,
-      publishedOn: post.publishedAt,
-      tags: post.tags || [],
-      category: post.category || '',
-    },
-    content: post.mdxContent || post.body, // Prefer raw MDX if available
-    readingTime: post.readingTime || '1 min read',
-    coverImage: post.coverImage,
-    isSanity: true,
-  };
+    const sanityClient = assertSanityClient();
+    const post = await sanityClient.fetch(POST_QUERY, { slug });
+
+    if (!post) {
+        return null;
+    }
+
+    return {
+        slug: post.slug,
+        frontmatter: {
+            title: post.title,
+            abstract: post.abstract,
+            publishedOn: post.publishedAt,
+            tags: post.tags || [],
+            category: post.category || '',
+        },
+        content: post.mdxContent || post.body,
+        readingTime: normalizeReadingTime(post.readingTime),
+        coverImage: post.coverImage,
+        isSanity: true,
+    };
 }
 
 async function getSanitySlugs() {
-  const posts = await client.fetch(SLUGS_QUERY);
-  return posts.map((p) => p.slug);
+    const sanityClient = assertSanityClient();
+    const posts = await sanityClient.fetch(SLUGS_QUERY);
+    return posts.map((post) => post.slug);
 }
 
-// ─── Local MDX-backed functions (fallback) ─────────────────
-
 async function getLocalBlogPostList() {
-  const fileNames = await readDirectory('/content');
-  const blogPosts = [];
+    const fileNames = await readDirectory(LOCAL_CONTENT_DIR);
+    const blogPosts = [];
 
-  for (const fileName of fileNames) {
-    const rawContent = await readFile(`/content/${fileName}`);
-    const { data: frontmatter, content } = matter(rawContent);
+    for (const fileName of fileNames) {
+        const rawContent = await readFile(`${LOCAL_CONTENT_DIR}/${fileName}`);
+        const { data: frontmatter, content } = matter(rawContent);
 
-    blogPosts.push({
-      slug: fileName.replace('.mdx', ''),
-      ...frontmatter,
-      readingTime: calculateReadingTime(content),
-    });
-  }
+        blogPosts.push({
+            slug: fileName.replace('.mdx', ''),
+            ...frontmatter,
+            readingTime: calculateReadingTime(content),
+        });
+    }
 
-  return blogPosts.sort((p1, p2) =>
-    new Date(p2.publishedOn) - new Date(p1.publishedOn)
-  );
+    return blogPosts.sort(
+        (left, right) => new Date(right.publishedOn) - new Date(left.publishedOn)
+    );
 }
 
 async function loadLocalBlogPost(slug) {
-  try {
-    const rawContent = await readFile(`/content/${slug}.mdx`);
-    const { data: frontmatter, content } = matter(rawContent);
+    try {
+        const rawContent = await readFile(`${LOCAL_CONTENT_DIR}/${slug}.mdx`);
+        const { data: frontmatter, content } = matter(rawContent);
 
-    return {
-      frontmatter,
-      content,
-      readingTime: calculateReadingTime(content),
-      isSanity: false,
-    };
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return null;
+        return {
+            frontmatter,
+            content,
+            readingTime: calculateReadingTime(content),
+            isSanity: false,
+        };
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            return null;
+        }
+
+        throw error;
     }
-    throw error;
-  }
 }
 
 async function getLocalSlugs() {
-  const fileNames = await readDirectory('/content');
-  return fileNames.map((name) => name.replace('.mdx', ''));
+    const fileNames = await readDirectory(LOCAL_CONTENT_DIR);
+    return fileNames.map((name) => name.replace('.mdx', ''));
 }
 
-// ─── Public API (auto-selects Sanity or local MDX) ─────────
+async function getPublicBlogPostList() {
+    try {
+        return await getSanityBlogPostList();
+    } catch (error) {
+        if (isLocalContentEnabled) {
+            console.warn(
+                'Sanity fetch failed, falling back to local content:',
+                error.message
+            );
+            return getLocalBlogPostList();
+        }
 
-// ─── Public API (auto-selects Sanity or local MDX) ─────────
+        throw error;
+    }
+}
 
-const useSanity = !!projectId;
+async function getPublicBlogPost(slug) {
+    try {
+        const post = await loadSanityBlogPost(slug);
+
+        if (post) {
+            return post;
+        }
+    } catch (error) {
+        if (!isLocalContentEnabled) {
+            throw error;
+        }
+
+        console.warn(
+            'Sanity post fetch failed, falling back to local content:',
+            error.message
+        );
+    }
+
+    if (isLocalContentEnabled) {
+        return loadLocalBlogPost(slug);
+    }
+
+    return null;
+}
+
+async function getPublicPostSlugs() {
+    try {
+        return await getSanitySlugs();
+    } catch (error) {
+        if (isLocalContentEnabled) {
+            console.warn(
+                'Sanity slug fetch failed, falling back to local content:',
+                error.message
+            );
+            return getLocalSlugs();
+        }
+
+        throw error;
+    }
+}
+
+const getCachedBlogPostList = unstable_cache(
+    async () => getPublicBlogPostList(),
+    ['public-blog-post-list'],
+    {
+        revalidate: PUBLIC_REVALIDATE_SECONDS,
+        tags: [PUBLIC_CONTENT_TAG],
+    }
+);
+
+const getCachedBlogPost = unstable_cache(
+    async (slug) => getPublicBlogPost(slug),
+    ['public-blog-post'],
+    {
+        revalidate: PUBLIC_REVALIDATE_SECONDS,
+        tags: [PUBLIC_CONTENT_TAG],
+    }
+);
+
+const getCachedPostSlugs = unstable_cache(
+    async () => getPublicPostSlugs(),
+    ['public-blog-post-slugs'],
+    {
+        revalidate: PUBLIC_REVALIDATE_SECONDS,
+        tags: [PUBLIC_CONTENT_TAG],
+    }
+);
 
 export async function getBlogPostList() {
-  let sanityPosts = [];
-  if (useSanity) {
-    try {
-      sanityPosts = await getSanityBlogPostList();
-    } catch (err) {
-      console.warn('Sanity fetch failed, falling back to local MDX:', err.message);
-    }
-  }
-
-  const localPosts = await getLocalBlogPostList();
-
-  // combine and deduplicate by slug
-  const allPosts = [...sanityPosts, ...localPosts];
-  const uniquePosts = Array.from(
-    new Map(allPosts.map((p) => [p.slug, p])).values()
-  );
-
-  return uniquePosts.sort((p1, p2) =>
-    new Date(p2.publishedOn) - new Date(p1.publishedOn)
-  );
+    return getCachedBlogPostList();
 }
 
 export async function loadBlogPost(slug) {
-  if (useSanity) {
-    try {
-      const post = await loadSanityBlogPost(slug);
-      if (post) return post;
-    } catch (err) {
-      console.warn('Sanity fetch failed, falling back to local MDX:', err.message);
-    }
-  }
-  return loadLocalBlogPost(slug);
+    return getCachedBlogPost(slug);
 }
 
 export async function getAllPostSlugs() {
-  let sanitySlugs = [];
-  if (useSanity) {
-    try {
-      sanitySlugs = await getSanitySlugs();
-    } catch (err) {
-      console.warn('Sanity fetch failed, falling back to local MDX:', err.message);
-    }
-  }
-
-  const localSlugs = await getLocalSlugs();
-  return Array.from(new Set([...sanitySlugs, ...localSlugs]));
+    return getCachedPostSlugs();
 }
 
-// ─── File system helpers ───────────────────────────────────
+export async function getAdminBlogPostList() {
+    return getSanityBlogPostList();
+}
+
+export async function loadAdminBlogPost(slug) {
+    return loadSanityBlogPost(slug);
+}
+
+export function canReadFromSanity() {
+    return Boolean(projectId);
+}
+
+export function canWriteToSanity() {
+    return Boolean(writeClient);
+}
 
 function readFile(localPath) {
-  return fs.readFile(path.join(process.cwd(), localPath), 'utf8');
+    return fs.readFile(path.join(process.cwd(), localPath), 'utf8');
 }
 
-function readDirectory(localPath) {
-  return fs.readdir(path.join(process.cwd(), localPath));
+async function readDirectory(localPath) {
+    try {
+        return await fs.readdir(path.join(process.cwd(), localPath));
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            return [];
+        }
+
+        throw error;
+    }
 }
