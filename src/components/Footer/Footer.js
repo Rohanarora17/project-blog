@@ -1,10 +1,15 @@
 import React from "react";
+import dynamic from "next/dynamic";
 
 import Logo from "@/components/Logo";
-import Newsletter from "@/components/Newsletter";
 
 import DecorativeSwoops from "./DecorativeSwoops";
 import styles from "./Footer.module.css";
+
+const Newsletter = dynamic(() => import("@/components/Newsletter"), {
+  ssr: false,
+  loading: () => null,
+});
 
 function Footer() {
   return (

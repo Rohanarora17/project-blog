@@ -1,4 +1,5 @@
 import React from 'react';
+import dynamic from 'next/dynamic';
 import clsx from 'clsx';
 import { Rss, Lock } from 'react-feather';
 
@@ -6,7 +7,17 @@ import Logo from '@/components/Logo';
 import VisuallyHidden from '@/components/VisuallyHidden';
 
 import styles from './Header.module.css';
-import ToggleTheme from '../ToggleTheme';
+
+const ToggleTheme = dynamic(() => import('../ToggleTheme'), {
+  ssr: false,
+  loading: () => (
+    <span
+      className={styles.action}
+      aria-hidden="true"
+      style={{ display: 'inline-block', width: '2.5rem', height: '2.5rem' }}
+    />
+  ),
+});
 
 function Header({ className, ...delegated }) {
   return (
