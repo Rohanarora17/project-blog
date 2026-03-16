@@ -1,4 +1,5 @@
 import React from "react";
+import dynamic from "next/dynamic";
 import { Work_Sans, Spline_Sans_Mono } from "next/font/google";
 import clsx from "clsx";
 import Script from "next/script";
@@ -6,10 +7,13 @@ import { LIGHT_TOKENS, DARK_TOKENS, BLOG_TITLE, BLOG_DESCRIPTION } from "@/const
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import "./styles.css";
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SITE_URL } from "@/lib/site-config";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+
+const ClientTelemetry = dynamic(
+  () => import("@/components/ClientTelemetry/ClientTelemetry"),
+  { ssr: false }
+);
 
 const mainFont = Work_Sans({
   subsets: ["latin"],
@@ -107,8 +111,7 @@ function RootLayout({ children }) {
         <Header />
         <main>{children}</main>
         <Footer />
-        <Analytics mode={"production"} />
-        <SpeedInsights />
+        <ClientTelemetry />
         {GOOGLE_ANALYTICS_ID && (
           <>
             <Script
